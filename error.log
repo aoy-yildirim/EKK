@@ -1,0 +1,4 @@
+2026-04-29 14:57:14 ERROR [Client IP: 10.35.8.82]: Error connecting to PostgreSQL: connection failed: connection to server at "206.189.48.33", port 5432 failed: Permission denied (0x0000271D/10013)
+	Is the server running on that host and accepting TCP/IP connections?
+2026-04-29 15:17:10 ERROR [Client IP: 10.35.8.82]: Error with EKK modbus connection or reading: Unable to connect to Modbus device 188.59.98.14/32:40502
+2026-04-29 15:18:29 ERROR [Client IP: 10.35.8.82]: Error with EKK modbus connection or reading: ModbusClientMixin.read_holding_registers() got an unexpected keyword argument 'device_id'

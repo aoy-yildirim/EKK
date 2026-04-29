@@ -1,0 +1,145 @@
+WITH upsert_device AS (
+    INSERT INTO public.ekk_device (
+        site_id,
+        serial_number,
+        name,
+        brand,
+        model,
+        status,
+        modbus_host,
+        modbus_port,
+        modbus_unit_id,
+        web_base_url
+    )
+    SELECT
+        power_plant.site_id,
+        'MJ-2106A498-05',
+        'SYS Cati GES EKK',
+        'Schneider Electric',
+        'PowerLogic ION7650',
+        1,
+        '188.59.98.14',
+        40502,
+        1,
+        'http://188.59.98.14:40080'
+    FROM public.power_plant
+    WHERE power_plant.id = 82
+    ON CONFLICT (site_id) DO UPDATE
+    SET serial_number = EXCLUDED.serial_number,
+        name = EXCLUDED.name,
+        brand = EXCLUDED.brand,
+        model = EXCLUDED.model,
+        status = EXCLUDED.status,
+        modbus_host = EXCLUDED.modbus_host,
+        modbus_port = EXCLUDED.modbus_port,
+        modbus_unit_id = EXCLUDED.modbus_unit_id,
+        web_base_url = EXCLUDED.web_base_url,
+        updated_at = CURRENT_TIMESTAMP
+    RETURNING id
+),
+device_ref AS (
+    SELECT id FROM upsert_device
+)
+INSERT INTO public.ekk_device_register_map (
+    ekk_device_id,
+    quantity,
+    modbus_register,
+    number_of_modbus_registers,
+    modbus_data_type,
+    modbus_units,
+    web_page_tag,
+    scale_multiplier,
+    is_enabled,
+    display_order,
+    notes
+)
+SELECT
+    device_ref.id,
+    seed.quantity,
+    seed.modbus_register,
+    seed.number_of_modbus_registers,
+    seed.modbus_data_type,
+    seed.modbus_units,
+    seed.web_page_tag,
+    seed.scale_multiplier,
+    true,
+    seed.display_order,
+    seed.notes
+FROM device_ref
+CROSS JOIN (
+    VALUES
+        ('i_a', 40150, 1, 'UINT16', 'A', 'operation.current', 0.100000, 10, 'I a'),
+        ('i_b', 40151, 1, 'UINT16', 'A', 'operation.current', 0.100000, 20, 'I b'),
+        ('i_c', 40152, 1, 'UINT16', 'A', 'operation.current', 0.100000, 30, 'I c'),
+        ('i4', 40153, 1, 'UINT16', 'A', 'power_quality.current_harmonics', 0.100000, 40, 'I4'),
+        ('i5', 40154, 1, 'UINT16', 'A', 'power_quality.current_harmonics', 0.100000, 50, 'I5'),
+        ('i_avg', 40155, 1, 'UINT16', 'A', 'operation.current', 0.100000, 60, 'I avg'),
+        ('freq', 40159, 1, 'UINT16', 'Hz', 'operation.frequency', 0.100000, 70, 'Frequency'),
+        ('v_unbal', 40163, 1, 'UINT16', '%', 'operation.voltage', 0.100000, 80, 'Voltage unbalance'),
+        ('i_unbal', 40164, 1, 'UINT16', '%', 'operation.current', 0.100000, 90, 'Current unbalance'),
+        ('vln_a', 40166, 2, 'UINT32', 'V', 'operation.voltage', 1.000000, 100, 'Vln a'),
+        ('vln_b', 40168, 2, 'UINT32', 'V', 'operation.voltage', 1.000000, 110, 'Vln b'),
+        ('vln_c', 40170, 2, 'UINT32', 'V', 'operation.voltage', 1.000000, 120, 'Vln c'),
+        ('vln_avg', 40172, 2, 'UINT32', 'V', 'operation.voltage', 1.000000, 130, 'Vln avg'),
+        ('vll_ab', 40178, 2, 'UINT32', 'V', 'operation.voltage', 1.000000, 140, 'Vll a-b'),
+        ('vll_bc', 40180, 2, 'UINT32', 'V', 'operation.voltage', 1.000000, 150, 'Vll b-c'),
+        ('vll_ca', 40182, 2, 'UINT32', 'V', 'operation.voltage', 1.000000, 160, 'Vll c-a'),
+        ('vll_avg', 40184, 2, 'UINT32', 'V', 'operation.voltage', 1.000000, 170, 'Vll avg'),
+        ('kw_a', 40198, 2, 'INT32', 'kW', 'operation.power', 1.000000, 180, 'kW a'),
+        ('kw_b', 40200, 2, 'INT32', 'kW', 'operation.power', 1.000000, 190, 'kW b'),
+        ('kw_c', 40202, 2, 'INT32', 'kW', 'operation.power', 1.000000, 200, 'kW c'),
+        ('kw_total', 40204, 2, 'INT32', 'kW', 'operation.power', 1.000000, 210, 'kW total'),
+        ('kw_total_max', 40206, 2, 'INT32', 'kW', 'consumption.demand', 1.000000, 220, 'kW total max'),
+        ('kvar_a', 40208, 2, 'INT32', 'kVAR', 'operation.power', 1.000000, 230, 'kVAR a'),
+        ('kvar_b', 40210, 2, 'INT32', 'kVAR', 'operation.power', 1.000000, 240, 'kVAR b'),
+        ('kvar_c', 40212, 2, 'INT32', 'kVAR', 'operation.power', 1.000000, 250, 'kVAR c'),
+        ('kvar_total', 40214, 2, 'INT32', 'kVAR', 'operation.power', 1.000000, 260, 'kVAR total'),
+        ('kvar_total_max', 40216, 2, 'INT32', 'kVAR', 'consumption.demand', 1.000000, 270, 'kVAR total max'),
+        ('kva_a', 40218, 2, 'INT32', 'kVA', 'operation.power', 1.000000, 280, 'kVA a'),
+        ('kva_b', 40220, 2, 'INT32', 'kVA', 'operation.power', 1.000000, 290, 'kVA b'),
+        ('kva_c', 40222, 2, 'INT32', 'kVA', 'operation.power', 1.000000, 300, 'kVA c'),
+        ('kva_total', 40224, 2, 'INT32', 'kVA', 'operation.power', 1.000000, 310, 'kVA total'),
+        ('kva_total_max', 40226, 2, 'INT32', 'kVA', 'consumption.demand', 1.000000, 320, 'kVA total max'),
+        ('kwh_del', 40230, 2, 'INT32', 'kWh', 'consumption.energy', 0.001000, 330, 'kWh delivered'),
+        ('kwh_rec', 40232, 2, 'INT32', 'kWh', 'consumption.energy', 0.001000, 340, 'kWh received'),
+        ('kvarh_del', 40234, 2, 'INT32', 'kVARh', 'consumption.energy', 0.001000, 350, 'kVARh delivered'),
+        ('kvarh_rec', 40236, 2, 'INT32', 'kVARh', 'consumption.energy', 0.001000, 360, 'kVARh received'),
+        ('kvah_del_rec', 40238, 2, 'INT32', 'kVAh', 'consumption.energy', 0.001000, 370, 'kVAh delivered+received'),
+        ('pf_sign_a', 40262, 1, 'INT16', '%', 'operation.power_factor', 0.010000, 380, 'PF sign a'),
+        ('pf_sign_b', 40263, 1, 'INT16', '%', 'operation.power_factor', 0.010000, 390, 'PF sign b'),
+        ('pf_sign_c', 40264, 1, 'INT16', '%', 'operation.power_factor', 0.010000, 400, 'PF sign c'),
+        ('pf_sign_total', 40265, 1, 'INT16', '%', 'operation.power_factor', 0.010000, 410, 'PF sign total'),
+        ('v1_thd', 40266, 1, 'INT16', '%', 'power_quality.voltage_harmonics', 0.010000, 420, 'V1 THD max'),
+        ('v2_thd', 40267, 1, 'INT16', '%', 'power_quality.voltage_harmonics', 0.010000, 430, 'V2 THD max'),
+        ('v3_thd', 40268, 1, 'INT16', '%', 'power_quality.voltage_harmonics', 0.010000, 440, 'V3 THD max'),
+        ('i1_thd', 40269, 1, 'INT16', '%', 'power_quality.current_harmonics', 0.010000, 450, 'I1 THD max'),
+        ('i2_thd', 40270, 1, 'INT16', '%', 'power_quality.current_harmonics', 0.010000, 460, 'I2 THD max'),
+        ('i3_thd', 40271, 1, 'INT16', '%', 'power_quality.current_harmonics', 0.010000, 470, 'I3 THD max'),
+        ('i1_k_factor', 40272, 1, 'INT16', NULL, 'power_quality.current_harmonics', 0.010000, 480, 'I1 K factor'),
+        ('i2_k_factor', 40273, 1, 'INT16', NULL, 'power_quality.current_harmonics', 0.010000, 490, 'I2 K factor'),
+        ('i3_k_factor', 40274, 1, 'INT16', NULL, 'power_quality.current_harmonics', 0.010000, 500, 'I3 K factor'),
+        ('i1_crest_factor', 40275, 1, 'INT16', NULL, 'power_quality.current_harmonics', 0.010000, 510, 'I1 crest factor'),
+        ('i2_crest_factor', 40276, 1, 'INT16', NULL, 'power_quality.current_harmonics', 0.010000, 520, 'I2 crest factor'),
+        ('i3_crest_factor', 40277, 1, 'INT16', NULL, 'power_quality.current_harmonics', 0.010000, 530, 'I3 crest factor')
+) AS seed(
+    quantity,
+    modbus_register,
+    number_of_modbus_registers,
+    modbus_data_type,
+    modbus_units,
+    web_page_tag,
+    scale_multiplier,
+    display_order,
+    notes
+)
+ON CONFLICT (ekk_device_id, quantity) DO UPDATE
+SET modbus_register = EXCLUDED.modbus_register,
+    number_of_modbus_registers = EXCLUDED.number_of_modbus_registers,
+    modbus_data_type = EXCLUDED.modbus_data_type,
+    modbus_units = EXCLUDED.modbus_units,
+    web_page_tag = EXCLUDED.web_page_tag,
+    scale_multiplier = EXCLUDED.scale_multiplier,
+    is_enabled = EXCLUDED.is_enabled,
+    display_order = EXCLUDED.display_order,
+    notes = EXCLUDED.notes,
+    updated_at = CURRENT_TIMESTAMP;

@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run main.py",
+      "type": "shell",
+      "command": "C:/Users/aliosman.yildirim/AppData/Local/Programs/Python/Python312/python.exe",
+      "args": ["main.py"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
