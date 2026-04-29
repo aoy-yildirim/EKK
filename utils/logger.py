@@ -1,5 +1,7 @@
 import logging
+import os
 import socket
+import sys
 
 try:
     CLIENT_IP = socket.gethostbyname(socket.gethostname())
@@ -16,7 +18,14 @@ class IPLogFilter(logging.Filter):
 def get_logger() -> logging.Logger:
     logger = logging.getLogger("ekk_logger")
     if not logger.hasHandlers():
-        handler = logging.FileHandler("error.log")
+        log_file = os.getenv("LOG_FILE", "logs/error.log")
+        try:
+            log_dir = os.path.dirname(log_file)
+            if log_dir:
+                os.makedirs(log_dir, exist_ok=True)
+            handler = logging.FileHandler(log_file)
+        except OSError:
+            handler = logging.StreamHandler(sys.stderr)
         formatter = logging.Formatter(
             "%(asctime)s %(levelname)s [Client IP: %(clientip)s]: %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
