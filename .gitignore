@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+error.log
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.idea/
+
+# Local reference/downloaded files
+_ref_python_modbus/
+python_modbus-main.zip
