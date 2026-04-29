@@ -30,3 +30,4 @@ Thumbs.db
 # Local reference/downloaded files
 _ref_python_modbus/
 python_modbus-main.zip
+*.zip
