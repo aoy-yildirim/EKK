@@ -22,8 +22,8 @@ Bu klasör, saha bazlı EKK cihazı için PostgreSQL tablolarını ve Python pol
 
 ## Kurulum
 
-1. [001_create_ekk_tables.sql](/D:/OneDrive - BAKIRÇAY ÜNİVERSİTESİ/DEVELOPER/sysEnerji/_2026_PVSENSE/codex/EKK/sql/001_create_ekk_tables.sql) dosyasını çalıştırın.
-2. [002_seed_sys_cati_ion7650.sql](/D:/OneDrive - BAKIRÇAY ÜNİVERSİTESİ/DEVELOPER/sysEnerji/_2026_PVSENSE/codex/EKK/sql/002_seed_sys_cati_ion7650.sql) dosyasını çalıştırın.
+1. [001_create_ekk_tables.sql](/D:/OneDrive - BAKIRÇAY ÜNİVERSİTESİ/DEVELOPER/sysEnerji/\_2026_PVSENSE/codex/EKK/sql/001_create_ekk_tables.sql) dosyasını çalıştırın.
+2. [002_seed_sys_cati_ion7650.sql](/D:/OneDrive - BAKIRÇAY ÜNİVERSİTESİ/DEVELOPER/sysEnerji/\_2026_PVSENSE/codex/EKK/sql/002_seed_sys_cati_ion7650.sql) dosyasını çalıştırın.
 3. Python bağımlılıklarını kurun:
 
 ```bash
@@ -33,9 +33,15 @@ pip install -r requirements.txt
 4. Ortam değişkenlerini tanımlayın:
 
 ```bash
-export DATABASE_URL="postgresql://user:password@host:5432/dbname"
-export LOG_LEVEL=INFO
-export EKK_INTERVAL_SECONDS=300
+
+DB_USER="postgres"
+DB_PASSWORD=""
+DB_HOST=""
+DB_PORT="5432"
+DB_NAME=""
+
+LOG_LEVEL=INFO
+EKK_INTERVAL_SECONDS=300
 ```
 
 ## Çalıştırma
@@ -58,3 +64,20 @@ pm2 start main.py --interpreter python3 --name ekk_job_site_11 -- 11
 - Modbus unit id değeri verilen bilgilerde olmadığı için varsayılan olarak `1` kullanıldı.
 - PDF içinde web ekranındaki peak-demand zaman damgaları için ayrı register adresleri net ayıklanamadı. Bu nedenle ilk seed, operasyon, tüketim ve power quality ekranlarında görünen ana anlık/enerji/harmonik alanlarını kapsar.
 - Yapı, verdiğiniz `python_modbus` örneğine benzer olacak şekilde `main.py + utils/` formuna çevrildi.
+
+---ubuntu sunucu üzerinde
+
+> ssh syspower@206.189.48.33
+> cd /home/syspower/EKK-jobs/EKK
+> pm2 start main.py --name EKK_job_site_2 -- 2
+> pm2 save
+> pm2 monit
+
+> pm2 logs EKK_job_site_2
+
+cd ~/EKK-jobs/EKK
+
+> git config --global --add safe.directory /home/syspower/EKK-jobs/EKK
+> sudo git pull origin main
+> python3 -m pip install -r requirements.txt
+> python3 main.py 2 --once
