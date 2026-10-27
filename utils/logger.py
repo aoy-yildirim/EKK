@@ -23,7 +23,7 @@ def get_logger() -> logging.Logger:
             log_dir = os.path.dirname(log_file)
             if log_dir:
                 os.makedirs(log_dir, exist_ok=True)
-            handler = logging.FileHandler(log_file)
+            handler = logging.FileHandler(log_file, encoding="utf-8")
         except OSError:
             handler = logging.StreamHandler(sys.stderr)
         formatter = logging.Formatter(

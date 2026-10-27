@@ -50,6 +50,11 @@ Tek seferlik test:
 
 ```bash
 python3 main.py 11
+
+--bu
+\sysEnerji_2026_PVSENSE\codex\EKK> python main.py 2 --once
+
+
 ```
 
 PM2 ile:
@@ -81,3 +86,5 @@ cd ~/EKK-jobs/EKK
 > sudo git pull origin main
 > python3 -m pip install -r requirements.txt
 > python3 main.py 2 --once
+
+\sysEnerji_2026_PVSENSE\codex\EKK> python main.py 2 --once

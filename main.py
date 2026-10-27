@@ -2,11 +2,7 @@ import sys
 import time
 import datetime
 
-from dotenv import load_dotenv
-
 from utils.modbus_utils import ekk_modbus_read_and_store
-
-load_dotenv()
 
 
 if __name__ == "__main__":

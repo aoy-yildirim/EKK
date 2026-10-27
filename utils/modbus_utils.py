@@ -149,6 +149,13 @@ def decode_value(registers: List[int], data_type: str):
     if data_type == "INT32":
         value = (registers[0] << 16) | registers[1]
         return value - 0x100000000 if value & 0x80000000 else value
+    if data_type == "INT64":
+        if len(registers) != 4:
+            raise ValueError("INT64 requires exactly four Modbus registers")
+        value = 0
+        for word in registers:
+            value = (value << 16) | word
+        return value - (1 << 64) if value & (1 << 63) else value
     if data_type == "FLOAT32":
         import struct
 
@@ -163,7 +170,40 @@ def normalize_host(host: str) -> str:
     return host.split("/", 1)[0]
 
 
-def read_all_registers(host: str, port: int, device_id: int, register_map: List[RegisterMapRow]) -> Dict[str, Dict[str, object]]:
+def register_address_offset(model: str) -> int:
+    # Select by model, not register magnitude: native ION maps also have
+    # registers above 40000, which must not be treated as legacy references.
+    model_tokens = model.upper().split()
+    if "ION7400" in model_tokens or "ION9000" in model_tokens:
+        return 1
+    if "ION7650" in model_tokens:
+        return 40001
+    if "".join(model_tokens) in {"IMETER7A", "CETIMETER7A"}:
+        # CET iMeter 7A protocol v7.0 starts at register 0000 (Ua).
+        return 0
+    raise ValueError(f"Unsupported EKK model/addressing: {model!r}")
+
+
+def payload_json_default(value):
+    if isinstance(value, Decimal):
+        # Preserve INT64 energy precision in raw_payload as decimal text.
+        # reading_value.value_numeric is still stored as PostgreSQL NUMERIC.
+        return str(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
+def dump_payload(payload):
+    return json.dumps(payload, default=payload_json_default, allow_nan=False)
+
+
+def read_all_registers(host: str, port: int, device_id: int, register_map: List[RegisterMapRow],
+                       model: str = "PowerLogic ION7650") -> Dict[str, Dict[str, object]]:
+    address_offset = register_address_offset(model)
+    blocks = group_registers(register_map)
+    for start, count in blocks:
+        address = start - address_offset
+        if not 0 <= address <= 65535 or address + count > 65536:
+            raise ValueError(f"Invalid register block {start}:{count} for model {model}")
     host = normalize_host(host)
     client = ModbusTcpClient(host=host, port=port, timeout=10)
     if not client.connect():
@@ -171,9 +211,9 @@ def read_all_registers(host: str, port: int, device_id: int, register_map: List[
 
     try:
         cache: Dict[int, int] = {}
-        for start, count in group_registers(register_map):
+        for start, count in blocks:
             response = client.read_holding_registers(
-                address=start - 40001,
+                address=start - address_offset,
                 count=count,
                 slave=device_id,
             )
@@ -195,7 +235,10 @@ def read_all_registers(host: str, port: int, device_id: int, register_map: List[
             value_json = None
 
             if isinstance(decoded, (int, float)):
-                value_numeric = float(Decimal(str(decoded)) * item.scale_multiplier)
+                scaled = Decimal(str(decoded)) * item.scale_multiplier
+                if not scaled.is_finite():
+                    raise ValueError(f"Non-finite measurement for {item.quantity}")
+                value_numeric = scaled if item.modbus_data_type.upper() == "INT64" else float(scaled)
             elif item.modbus_data_type.upper() in {"BITMAP", "DATETIME"}:
                 value_json = json.loads(decoded)
             else:
@@ -243,7 +286,7 @@ def insert_ekk_data(conn, payload: Dict[str, Dict[str, object]], site_id: int, e
             started_at,
             finished_at,
             "SUCCESS",
-            Json(payload),
+            Json(payload, dumps=dump_payload),
         ),
     )
     reading_id = cur.fetchone()["id"]
@@ -320,6 +363,7 @@ def ekk_modbus_read_and_store(site_id: int):
             port=ekk_device.modbus_port,
             device_id=ekk_device.modbus_unit_id,
             register_map=register_map,
+            model=ekk_device.model,
         )
         print("Modbus EKK read result sample:", list(result.items())[:3])
 
