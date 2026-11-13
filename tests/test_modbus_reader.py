@@ -95,6 +95,32 @@ class ReaderTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.reader["register_address_offset"]("iMeter 8")
 
+    def test_janitza_native_address_and_model_names(self):
+        import struct
+        for model in ("UMG512", "UMG 512", "Janitza UMG512", "janitza umg 512"):
+            self.respond(list(struct.unpack(">HH", struct.pack(">f", 18482.125))))
+            result = self.reader["read_all_registers"](
+                "example.invalid", 502, 1, [self.row(19000)], model=model)
+            self.client.read_holding_registers.assert_called_with(address=19000, count=2, slave=1)
+            self.assertEqual(result["measurement"]["value_numeric"], 18482.125)
+
+    def test_janitza_power_and_float_energy_conversion(self):
+        import struct
+        for reg, raw, expected in ((19026, -2189850.0, -2189.85),
+                                   (6508, 63015732.0, 63015.732),
+                                   (6484, -35169648640.0, -35169648.64)):
+            self.respond(list(struct.unpack(">HH", struct.pack(">f", raw))))
+            result = self.reader["read_all_registers"](
+                "example.invalid", 502, 1, [self.row(reg, "FLOAT32", 2, "0.001")],
+                model="UMG512")
+            self.client.read_holding_registers.assert_called_with(address=reg, count=2, slave=1)
+            self.assertAlmostEqual(result["measurement"]["value_numeric"], expected, places=6)
+
+    def test_other_janitza_models_are_not_assumed_compatible(self):
+        for model in ("UMG511", "UMG512-PRO", "UMG 512 PRO", "UMG5120"):
+            with self.assertRaises(ValueError):
+                self.reader["register_address_offset"](model)
+
     def test_int64_boundaries_and_word_order(self):
         decode = self.reader["decode_value"]
         self.assertEqual(decode([0, 0, 1, 2], "INT64"), 65538)

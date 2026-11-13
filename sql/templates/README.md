@@ -3,6 +3,10 @@
 Bu dosyalar elle çalıştırılan şablonlardır; otomatik migration değildir.
 Mevcut tablo yapısını kullanırlar. Yeni bir tip/profil tablosu oluşturmazlar.
 
+Janitza UMG512 için `insert_janitza_umg512.sql` ve adresleme, kapsam,
+enerji/PF anlamları için [JANITZA_UMG512.md](JANITZA_UMG512.md) dosyasını
+kullanın. Aşağıdaki ION kapsamı UMG512 şablonunu tarif etmez.
+
 CET iMeter 7A için `insert_imeter7a.sql` ve modele özgü adresleme,
 bağlantı, kapsam ve doğrulama notları için [IMETER7A.md](IMETER7A.md)
 dosyasını kullanın. Aşağıdaki 38 satırlık kapsam ION modellerine aittir.

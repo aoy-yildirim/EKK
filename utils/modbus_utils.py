@@ -181,6 +181,9 @@ def register_address_offset(model: str) -> int:
     if "".join(model_tokens) in {"IMETER7A", "CETIMETER7A"}:
         # CET iMeter 7A protocol v7.0 starts at register 0000 (Ua).
         return 0
+    if "".join(model_tokens) in {"UMG512", "JANITZAUMG512"}:
+        # Janitza's UMG512 list uses PDU addresses, e.g. 19000 = 0x4A38.
+        return 0
     raise ValueError(f"Unsupported EKK model/addressing: {model!r}")
 
 
