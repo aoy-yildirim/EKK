@@ -184,6 +184,15 @@ def register_address_offset(model: str) -> int:
     if "".join(model_tokens) in {"UMG512", "JANITZAUMG512"}:
         # Janitza's UMG512 list uses PDU addresses, e.g. 19000 = 0x4A38.
         return 0
+    if "".join(model_tokens) in {"EMK-01", "EMK01", "ENTESEMK-01", "ENTESEMK01"}:
+        import os
+
+        # EMK-01 live probe: table 40001 is PDU address 40001, not 0.
+        # Keep the override for explicitly verified alternate device mappings.
+        offset = int(os.getenv("EKK_ENTES_EMK01_ADDRESS_OFFSET", "0"))
+        if offset not in {0, 1, 40000, 40001}:
+            raise ValueError("EKK_ENTES_EMK01_ADDRESS_OFFSET must be 0, 1, 40000 or 40001")
+        return offset
     raise ValueError(f"Unsupported EKK model/addressing: {model!r}")
 
 
@@ -221,7 +230,12 @@ def read_all_registers(host: str, port: int, device_id: int, register_map: List[
                 slave=device_id,
             )
             if response.isError():
-                raise ModbusException(f"Read failed for register block {start}:{count}: {response}")
+                raise ModbusException(
+                    f"Read failed for register block {start}:{count} "
+                    f"(model={model}, pdu_address={start - address_offset}, "
+                    f"unit_id={device_id}, exception_code={getattr(response, 'exception_code', None)}): "
+                    f"{response}"
+                )
             for offset, value in enumerate(response.registers):
                 cache[start + offset] = value
 
